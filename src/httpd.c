@@ -64,7 +64,6 @@
 #define HTTPD_EOF        "\r\n"
 #define SERVER_STRING    "Server: tiny-httpd/1.0.0\r\n"
 #define MAX_LISTEN_NUM   100
-#define SOCKET_TIMEOUT   20 /* 20 seconds */
 #define RXTX_BUF_LEN     (8*1024)
 #define PTHREAD_STACK_SIZE (2*1024*1024) /* 2M */
 
@@ -90,9 +89,7 @@ static void unauthorized(int sock);
 static void not_found(int sock);
 static void internal_err(int sock);
 static void unimplemented(int sock);
-
 static void error_die(const char *errstr);
-
 static void *handle_req_entry(void *arg);
 static void handle_errcode_test(int client, const char *file);
 static void handle_get_req(int client, int speedtest, const char *file);
@@ -377,7 +374,7 @@ static void dispatch_request(int client)
             if( basic_user_auth(authinfo) < 0 )
             {
                 printf("Authorization failed!\n");
-				unauthorized(client);
+                unauthorized(client);
                 return;
             }
         }
@@ -509,13 +506,13 @@ static void handle_get_req(int client, int speedtest, const char *file)
                         break;
                     }
                 }
-				else
-				{
-					if( totallen + sendlen > contentlen )
+                else
+                {
+                    if( totallen + sendlen > contentlen )
                     {
                         sendlen = contentlen - totallen;
                     }
-				}
+                }
 
                 if( send_bytes(client, buf, sendlen) == 0 )
                 {
@@ -893,11 +890,11 @@ static int start_up(int *port)
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if( sock == -1 )
-	{
+    {
         error_die("socket");
-	}
+    }
     
-	memset(&serv, 0, sizeof(serv));
+    memset(&serv, 0, sizeof(serv));
     serv.sin_family = AF_INET;
     serv.sin_port = htons(*port);
     serv.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -911,16 +908,16 @@ static int start_up(int *port)
     {
         socklen_t len = sizeof(serv);
         if( getsockname(sock, (struct sockaddr *)&serv, &len) == -1 )
-		{
+        {
             error_die("getsockname");
-		}
+        }
         *port = ntohs(serv.sin_port);
     }
     
     if( listen(sock, MAX_LISTEN_NUM) < 0 )
-	{
+    {
         error_die("listen");
-	}
+    }
     
     return sock;
 }
@@ -1023,7 +1020,7 @@ int main(int argc, char *argv[])
     
     if( pattr )
     {
-		pthread_attr_destroy(pattr);
+        pthread_attr_destroy(pattr);
         free(pattr);
     }
 
