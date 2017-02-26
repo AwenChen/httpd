@@ -48,6 +48,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -66,6 +67,7 @@
 #define MAX_LISTEN_NUM   100
 #define RXTX_BUF_LEN     (8*1024)
 #define PTHREAD_STACK_SIZE (2*1024*1024) /* 2M */
+#define SOCKET_TIMEOUT   10 /* default timeout 10 seconds */
 
 /*
 * definition of global variables
@@ -159,7 +161,7 @@ use default directory [%s] instead!\n", optarg, workspace);
                 else
                 {
                     printf("Workspace [%s] is illegal: string length is beyond our expectation:\
-no more than %u, use default [%s] instead!\n", optarg, sizeof(workspace) - 1, workspace);
+no more than %lu, use default [%s] instead!\n", optarg, sizeof(workspace) - 1, workspace);
                 }
                 break;
                 
@@ -170,7 +172,7 @@ no more than %u, use default [%s] instead!\n", optarg, sizeof(workspace) - 1, wo
                 }
                 else
                 {
-                    printf("Username [%s] is illegal: string length is beyond our expectation: no more than %u, \
+                    printf("Username [%s] is illegal: string length is beyond our expectation: no more than %lu, \
 use default username [%s] instead!\n", optarg, sizeof(username) - 1, username);
                 }
                 break;
@@ -182,7 +184,7 @@ use default username [%s] instead!\n", optarg, sizeof(username) - 1, username);
                 }
                 else
                 {
-                    printf("Password [%s] is illegal: string length is beyond our expectation: no more than %u, \
+                    printf("Password [%s] is illegal: string length is beyond our expectation: no more than %lu, \
 use default password [%s] instead!\n", optarg, sizeof(password) - 1, password);
                 }
                 break;
@@ -432,7 +434,7 @@ static void handle_get_req(int client, int speedtest, const char *file)
     ull totallen   = 0;
     ull contentlen = 0;
     char buf[RXTX_BUF_LEN] = {0};
-    unsigned int sendlen = 0;
+    int sendlen = 0;
     fd_set wrset;
     fd_set tmpset;
     struct timeval tval;
@@ -979,7 +981,7 @@ int main(int argc, char *argv[])
     int client_sock = -1;
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    pthread_t newthread = -1;
+    pthread_t newthread;
     pthread_attr_t *pattr = NULL;
 
     get_cmd_option(argc, argv);
@@ -988,6 +990,8 @@ int main(int argc, char *argv[])
     printf("httpd is running on port [%d]\n", port);
 
     pattr = pthread_attr_set();
+
+    signal(SIGPIPE, SIG_IGN); /* ignore SIGPIPE to trigger EPIPE when write to a closing socket */
 
     while( 1 )
     {
